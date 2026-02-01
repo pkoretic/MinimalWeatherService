@@ -1,0 +1,74 @@
+name: Deploy to App Runner
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  AWS_REGION: "eu-central-1"
+  TF_WORKING_DIR: "./infra"
+  AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+
+jobs:
+  deploy:
+    name: Deploy Infrastructure and App
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-Deploy
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      # ----------------------------------------------------------------
+      # STEP 1: Create ECR Repo & Role for App Runner
+      # ----------------------------------------------------------------
+      - name: Terraform Apply (ECR Layer)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform apply -auto-approve \
+            -target=aws_ecr_repository.service_repo \
+            -target=aws_iam_role.apprunner_role \
+            -target=aws_iam_role_policy_attachment.apprunner_ecr_access \
+            -var="weather_api_key=${{ secrets.WEATHERAPI_APIKEY }}"
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ----------------------------------------------------------------
+      # STEP 2: Build and Push Docker Image
+      # ----------------------------------------------------------------
+      - name: Build, tag, and push image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: mkoretic/minimalweatherservice
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # ----------------------------------------------------------------
+      # STEP 3: Deploy App Runner (Full Infrastructure)
+      # ----------------------------------------------------------------
+      - name: Terraform Apply (Full App Runner)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform apply -auto-approve \
+            -var="weather_api_key=${{ secrets.WEATHERAPI_APIKEY }}"
