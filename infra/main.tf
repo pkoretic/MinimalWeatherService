@@ -11,7 +11,7 @@ terraform {
 # ---------------------------------------------------------
   backend "s3" {
     bucket = "mkoretic-minimalweatherservice-state"
-    key    = "weather-app/terraform.tfstate"
+    key    = "minimalweatherservice/terraform.tfstate"
     region = "eu-central-1"
   }
 }
