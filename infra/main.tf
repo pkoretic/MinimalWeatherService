@@ -113,7 +113,6 @@ resource "aws_apprunner_service" "weather_service" {
 
   health_check_configuration {
     protocol            = "TCP"
-    path                = "/"
     interval            = 10
     timeout             = 5
     healthy_threshold   = 1
