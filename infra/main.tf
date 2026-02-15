@@ -6,12 +6,12 @@ terraform {
     }
   }
 
-# ---------------------------------------------------------
-# BACKEND CONFIGURATION
-# ---------------------------------------------------------
+  # ---------------------------------------------------------
+  # BACKEND CONFIGURATION
+  # ---------------------------------------------------------
   backend "s3" {
     bucket = "mkoretic-minimalweatherservice-state"
-    key    = "minimalweatherservice/terraform.tfstate"
+    key    = "minimalweatherservice-bucket/terraform.tfstate"
     region = "eu-central-1"
   }
 }
@@ -95,7 +95,7 @@ resource "aws_apprunner_service" "weather_service" {
     image_repository {
       image_repository_type = "ECR"
       # Constructs the URI: <account_id>.dkr.ecr.<region>.amazonaws.com/repo:tag
-      image_identifier      = "${aws_ecr_repository.service_repo.repository_url}:${var.image_tag}"
+      image_identifier = "${aws_ecr_repository.service_repo.repository_url}:${var.image_tag}"
 
       image_configuration {
         port = "8080"
