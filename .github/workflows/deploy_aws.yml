@@ -51,10 +51,7 @@ jobs:
       - name: Terraform Apply (ECR Layer)
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          terraform apply -auto-approve \
-            -target=aws_ecr_repository.service_repo \
-            -target=aws_iam_role.apprunner_role \
-            -target=aws_iam_role_policy_attachment.apprunner_ecr_access \
+          terraform apply -auto-approve
             -var="weather_api_key=${{ secrets.WEATHERAPI_APIKEY }}"
 
       - name: Login to Amazon ECR
