@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 env:
-  AWS_REGION: "eu-central-1"
+  AWS_REGION: ${{ secrets.AWS_REGION }}
   TF_WORKING_DIR: "./infra"
   AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
 
